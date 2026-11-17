@@ -53,13 +53,16 @@ export interface ReviewResult {
 }
 
 /**
- * Решение студента: SQL-текст, результат проверки и
- * комментарий преподавателя при возврате на доработку.
+ * Решение студента: SQL-текст, результат проверки,
+ * зафиксированное при отправке выделение строк и комментарий
+ * преподавателя при возврате на доработку.
  */
 export interface Solution {
   cardId: string;
   sql: string;
   review: ReviewResult | null;
+  /** Строки, выделенные студентом в момент отправки. */
+  highlight?: SelectionRange | null;
   revisionComment?: string | null;
 }
 

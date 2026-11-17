@@ -1,5 +1,5 @@
-import "@mantine/core/styles.css";
-import { MantineProvider } from "@mantine/core";
+import "@radix-ui/themes/styles.css";
+import { Theme } from "@radix-ui/themes";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
@@ -10,8 +10,8 @@ if (!root) throw new Error("root element not found");
 
 createRoot(root).render(
   <StrictMode>
-    <MantineProvider>
+    <Theme accentColor="indigo">
       <App />
-    </MantineProvider>
+    </Theme>
   </StrictMode>,
 );

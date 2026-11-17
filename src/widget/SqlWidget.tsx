@@ -103,7 +103,7 @@ export function SqlWidget(props: SqlWidgetProps) {
       <SqlEditor
         value={editorSql}
         readOnly={!canSolve}
-        highlight={props.highlight ?? null}
+        highlight={props.highlight ?? solution?.highlight ?? null}
         onChange={setDraftSql}
         onSelectRange={(range) => props.onSelectionChange?.(range)}
       />

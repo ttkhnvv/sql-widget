@@ -1,5 +1,11 @@
 import { canTransition } from "../lifecycle.js";
-import type { CardStatus, ReviewResult, Solution, TaskCard } from "../types.js";
+import type {
+  CardStatus,
+  ReviewResult,
+  SelectionRange,
+  Solution,
+  TaskCard,
+} from "../types.js";
 
 const ORDER: CardStatus[] = [
   "draft",
@@ -77,13 +83,23 @@ export class MockPlatform {
     });
   }
 
-  submit(cardId: string, sql: string): void {
+  submit(
+    cardId: string,
+    sql: string,
+    highlight: SelectionRange | null = null,
+  ): void {
     this.apply(() => {
       const card = this.find(cardId);
       if (!card) return;
       this.advance(card, "in_progress");
       this.advance(card, "submitted");
-      this.solutions.set(cardId, { cardId, sql, review: null });
+      this.solutions.set(cardId, {
+        cardId,
+        sql,
+        review: null,
+        highlight,
+        revisionComment: null,
+      });
     });
   }
 
