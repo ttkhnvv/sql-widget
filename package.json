@@ -18,7 +18,9 @@
       "default": "./dist/mock/index.js"
     }
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",

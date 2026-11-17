@@ -15,3 +15,4 @@ export type {
 export { calculateScore } from "./score.js";
 export { canTransition } from "./lifecycle.js";
 export { getSelectedText, toSelectionRange } from "./selection.js";
+export { SqlWidget } from "./widget/SqlWidget.js";

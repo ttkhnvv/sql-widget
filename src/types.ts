@@ -99,6 +99,8 @@ export interface SqlWidgetProps {
   /** Текущее решение студента, если есть. */
   solution: Solution | null;
   executor: SqlExecutor;
+  /** Преподаватель редактирует карточку (статус draft). */
+  onCardChange?(card: TaskCard): void;
   /** Студент отправляет решение на проверку. */
   onSubmit(sql: string): void;
   /** Студент раскрывает подсказку (списывает баллы). */
