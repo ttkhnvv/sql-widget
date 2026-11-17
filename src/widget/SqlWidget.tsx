@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { calculateScore } from "../score.js";
 import { toSelectionRange } from "../selection.js";
 import type {
@@ -33,6 +33,12 @@ export function SqlWidget(props: SqlWidgetProps) {
   const [comment, setComment] = useState("");
   const [reviewScore, setReviewScore] = useState(calculateScore(card));
   const [reviewComment, setReviewComment] = useState("");
+
+  useEffect(() => {
+    setDraftSql(solution?.sql ?? "");
+    setResult(null);
+    setError(null);
+  }, [card.id]);
 
   const isTeacher = role === "teacher";
   const canSolve =
