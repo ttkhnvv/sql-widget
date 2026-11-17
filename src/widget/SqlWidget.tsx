@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { calculateScore } from "../score.js";
-import { toSelectionRange } from "../selection.js";
-import type {
-  SelectionRange,
-  SqlQueryResult,
-  SqlWidgetProps,
-} from "../types.js";
+import type { SqlQueryResult, SqlWidgetProps } from "../types.js";
 import { CardEditor } from "./CardEditor.js";
 import { ResultsTable } from "./ResultsTable.js";
 import { SqlEditor } from "./SqlEditor.js";
@@ -20,8 +15,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 /**
- * Виджет SQL-задания: карточка, редактор запроса, подсказки,
- * запросы помощи по выделенным строкам и проверка решения.
+ * Виджет SQL-задания: карточка, редактор запроса с общей
+ * подсветкой строк, подсказки, проверка и возврат на доработку.
  */
 export function SqlWidget(props: SqlWidgetProps) {
   const { card, role, solution } = props;
@@ -29,8 +24,6 @@ export function SqlWidget(props: SqlWidgetProps) {
   const [result, setResult] = useState<SqlQueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
-  const [selection, setSelection] = useState<SelectionRange | null>(null);
-  const [comment, setComment] = useState("");
   const [reviewScore, setReviewScore] = useState(calculateScore(card));
   const [reviewComment, setReviewComment] = useState("");
 
@@ -39,6 +32,11 @@ export function SqlWidget(props: SqlWidgetProps) {
     setResult(null);
     setError(null);
   }, [card.id]);
+
+  const usedHints = card.usedHintIds.join(",");
+  useEffect(() => {
+    setReviewScore(calculateScore(card));
+  }, [card.maxScore, usedHints, card.status]);
 
   const isTeacher = role === "teacher";
   const canSolve =
@@ -58,20 +56,6 @@ export function SqlWidget(props: SqlWidgetProps) {
     }
   }
 
-  function sendSelectionRequest() {
-    if (!selection) return;
-    props.onSelectionRequest({
-      id: crypto.randomUUID(),
-      cardId: card.id,
-      authorRole: role,
-      range: selection,
-      comment,
-      createdAt: new Date().toISOString(),
-    });
-    setComment("");
-    setSelection(null);
-  }
-
   if (isTeacher && card.status === "draft") {
     return (
       <div className="sqlw">
@@ -84,22 +68,6 @@ export function SqlWidget(props: SqlWidgetProps) {
   }
 
   const editorSql = canSolve ? draftSql : (solution?.sql ?? "");
-  const selectionPanel = selection && (
-    <div className="sqlw-selection">
-      <span>
-        Строки {selection.fromLine}–{selection.toLine}
-      </span>
-      <input
-        type="text"
-        placeholder="Комментарий"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-      />
-      <button type="button" onClick={sendSelectionRequest}>
-        {isTeacher ? "Отметить ошибку" : "Попросить помощи"}
-      </button>
-    </div>
-  );
 
   return (
     <div className="sqlw">
@@ -135,10 +103,10 @@ export function SqlWidget(props: SqlWidgetProps) {
       <SqlEditor
         value={editorSql}
         readOnly={!canSolve}
+        highlight={props.highlight ?? null}
         onChange={setDraftSql}
-        onSelectRange={(from, to) => setSelection(toSelectionRange(from, to))}
+        onSelectRange={(range) => props.onSelectionChange?.(range)}
       />
-      {selectionPanel}
 
       <div className="sqlw-actions">
         <button
@@ -177,21 +145,39 @@ export function SqlWidget(props: SqlWidgetProps) {
             <span>Комментарий</span>
             <textarea
               rows={2}
+              placeholder="Комментарий"
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
             />
           </label>
-          <button
-            type="button"
-            onClick={() =>
-              props.onReview({
-                score: reviewScore,
-                comment: reviewComment,
-              })
-            }
-          >
-            Оценить
-          </button>
+          <div className="sqlw-actions">
+            <button
+              type="button"
+              onClick={() =>
+                props.onReview({
+                  score: reviewScore,
+                  comment: reviewComment,
+                })
+              }
+            >
+              Оценить
+            </button>
+            {props.onReturnForRevision && (
+              <button
+                type="button"
+                onClick={() => props.onReturnForRevision?.(reviewComment)}
+              >
+                Вернуть на доработку
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {canSolve && solution?.revisionComment && (
+        <div className="sqlw-revision">
+          <strong>Комментарий преподавателя:</strong>
+          <p>{solution.revisionComment}</p>
         </div>
       )}
 

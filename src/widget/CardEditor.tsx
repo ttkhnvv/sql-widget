@@ -95,6 +95,13 @@ export function CardEditor({ card, onChange }: CardEditorProps) {
           </button>
         </div>
       </fieldset>
+      <button
+        type="button"
+        disabled={!card.prompt.trim() || !card.assigneeId}
+        onClick={() => update({ status: "assigned" })}
+      >
+        Назначить студента
+      </button>
     </div>
   );
 }

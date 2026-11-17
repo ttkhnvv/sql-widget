@@ -50,6 +50,7 @@ describe("canTransition", () => {
     expect(canTransition("assigned", "in_progress")).toBe(true);
     expect(canTransition("in_progress", "submitted")).toBe(true);
     expect(canTransition("submitted", "reviewed")).toBe(true);
+    expect(canTransition("submitted", "in_progress")).toBe(true);
   });
 
   test("запрещает пропуски и возвраты", () => {

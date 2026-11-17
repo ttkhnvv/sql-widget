@@ -1,20 +1,25 @@
 import { sql } from "@codemirror/lang-sql";
 import { basicSetup, EditorView } from "codemirror";
 import { useEffect, useRef } from "react";
+import { toSelectionRange } from "../selection.js";
+import type { SelectionRange } from "../types.js";
+import { applyHighlight, highlightExtension } from "./highlight.js";
 
 interface SqlEditorProps {
   value: string;
   readOnly?: boolean;
+  /** Строки, подсвеченные второй ролью. */
+  highlight?: SelectionRange | null;
   onChange?(value: string): void;
-  /** Выделенные строки, 0-based, границы включительны. */
-  onSelectRange?(fromLine: number, toLine: number): void;
+  onSelectRange?(range: SelectionRange | null): void;
 }
 
 /**
- * Редактор SQL на CodeMirror 6 с нумерацией строк.
+ * Редактор SQL на CodeMirror 6: нумерация строк, выделение
+ * строк мышью и подсветка строк второй роли.
  */
 export function SqlEditor(props: SqlEditorProps) {
-  const { value, readOnly = false } = props;
+  const { value, readOnly = false, highlight = null } = props;
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const callbacks = useRef(props);
@@ -27,18 +32,21 @@ export function SqlEditor(props: SqlEditorProps) {
       extensions: [
         basicSetup,
         sql(),
+        highlightExtension,
         EditorView.editable.of(!readOnly),
         EditorView.updateListener.of((update) => {
           const { onChange, onSelectRange } = callbacks.current;
           if (update.docChanged) {
             onChange?.(update.state.doc.toString());
           }
-          if (update.selectionSet) {
+          if (update.selectionSet && onSelectRange) {
             const sel = update.state.selection.main;
             const doc = update.state.doc;
-            onSelectRange?.(
-              doc.lineAt(sel.from).number - 1,
-              doc.lineAt(sel.to).number - 1,
+            onSelectRange(
+              toSelectionRange(
+                doc.lineAt(sel.from).number - 1,
+                doc.lineAt(sel.to).number - 1,
+              ),
             );
           }
         }),
@@ -61,7 +69,8 @@ export function SqlEditor(props: SqlEditorProps) {
         changes: { from: 0, to: current.length, insert: value },
       });
     }
-  }, [value]);
+    applyHighlight(editor, highlight);
+  }, [value, highlight]);
 
   return <div className="sqlw-editor" ref={host} />;
 }

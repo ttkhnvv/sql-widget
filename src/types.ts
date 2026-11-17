@@ -31,30 +31,17 @@ export interface TaskCard {
   /** Идентификатор назначенного студента, null — не назначен. */
   assigneeId: string | null;
   status: CardStatus;
-  /** Идентифаторы подсказок, раскрытых студентом. */
+  /** Идентификаторы подсказок, раскрытых студентом. */
   usedHintIds: string[];
 }
 
 /**
- * Диапазон выделенных строк SQL-запроса, нумерация с 1.
+ * Диапазон выделенных строк SQL-запроса, нумерация с 1,
+ * границы включительны.
  */
 export interface SelectionRange {
   fromLine: number;
   toLine: number;
-}
-
-/**
- * Запрос по выделенным строкам: студент просит помощь или
- * преподаватель отмечает ошибочные строки.
- */
-export interface SelectionRequest {
-  id: string;
-  cardId: string;
-  authorRole: Role;
-  range: SelectionRange;
-  comment: string;
-  /** Время создания, ISO 8601. */
-  createdAt: string;
 }
 
 /**
@@ -66,12 +53,14 @@ export interface ReviewResult {
 }
 
 /**
- * Решение студента: SQL-текст и результат проверки.
+ * Решение студента: SQL-текст, результат проверки и
+ * комментарий преподавателя при возврате на доработку.
  */
 export interface Solution {
   cardId: string;
   sql: string;
   review: ReviewResult | null;
+  revisionComment?: string | null;
 }
 
 /**
@@ -99,14 +88,18 @@ export interface SqlWidgetProps {
   /** Текущее решение студента, если есть. */
   solution: Solution | null;
   executor: SqlExecutor;
+  /** Строки, подсвеченные у второй роли (общее пространство). */
+  highlight?: SelectionRange | null;
   /** Преподаватель редактирует карточку (статус draft). */
   onCardChange?(card: TaskCard): void;
   /** Студент отправляет решение на проверку. */
   onSubmit(sql: string): void;
   /** Студент раскрывает подсказку (списывает баллы). */
   onUseHint(hintId: string): void;
-  /** Отправка запроса по выделенным строкам. */
-  onSelectionRequest(request: SelectionRequest): void;
+  /** Преподаватель возвращает решение на доработку. */
+  onReturnForRevision?(comment: string): void;
   /** Преподаватель завершает проверку. */
   onReview(result: ReviewResult): void;
+  /** Изменение выделения строк в редакторе этой роли. */
+  onSelectionChange?(range: SelectionRange | null): void;
 }

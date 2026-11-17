@@ -1,11 +1,5 @@
 import { canTransition } from "../lifecycle.js";
-import type {
-  CardStatus,
-  ReviewResult,
-  SelectionRequest,
-  Solution,
-  TaskCard,
-} from "../types.js";
+import type { CardStatus, ReviewResult, Solution, TaskCard } from "../types.js";
 
 const ORDER: CardStatus[] = [
   "draft",
@@ -21,13 +15,12 @@ const LATENCY_MS = 300;
 type Listener = () => void;
 
 /**
- * In-memory имитация платформы: хранит карточки, решения и
- * запросы по выделенным строкам, обновляется асинхронно.
+ * In-memory имитация платформы: хранит карточки и решения,
+ * обновляется асинхронно.
  */
 export class MockPlatform {
   private cards: TaskCard[];
   private solutions = new Map<string, Solution>();
-  private requests: SelectionRequest[] = [];
   private listeners = new Set<Listener>();
   private version = 0;
 
@@ -56,17 +49,14 @@ export class MockPlatform {
     return solution ? structuredClone(solution) : null;
   }
 
-  getRequests(cardId: string): SelectionRequest[] {
-    return this.requests
-      .filter((request) => request.cardId === cardId)
-      .map((request) => structuredClone(request));
-  }
-
   /** Мгновенно: задержка сделала бы ввод текста мучительным. */
   updateCard(card: TaskCard): void {
     const index = this.cards.findIndex((c) => c.id === card.id);
-    if (index < 0) return;
-    this.cards[index] = structuredClone(card);
+    if (index < 0) {
+      this.cards.push(structuredClone(card));
+    } else {
+      this.cards[index] = structuredClone(card);
+    }
     this.version += 1;
     this.listeners.forEach((listener) => listener());
   }
@@ -111,9 +101,18 @@ export class MockPlatform {
     });
   }
 
-  addSelectionRequest(request: SelectionRequest): void {
+  /** Возврат решения на доработку: submitted → in_progress. */
+  returnForRevision(cardId: string, comment: string): void {
     this.apply(() => {
-      this.requests.push(structuredClone(request));
+      const card = this.find(cardId);
+      const solution = this.solutions.get(cardId);
+      if (!card || !solution) return;
+      if (!canTransition(card.status, "in_progress")) return;
+      card.status = "in_progress";
+      this.solutions.set(cardId, {
+        ...solution,
+        revisionComment: comment || null,
+      });
     });
   }
 

@@ -37,7 +37,7 @@ function renderWidget(
       executor={executor}
       onSubmit={noop}
       onUseHint={noop}
-      onSelectionRequest={noop}
+      onReturnForRevision={noop}
       onReview={noop}
       {...overrides}
     />,
@@ -101,5 +101,46 @@ describe("SqlWidget", () => {
     });
     expect(screen.getByText("Итог: 7 б.")).toBeTruthy();
     expect(screen.getByText("Хорошо")).toBeTruthy();
+  });
+
+  test("возврат на доработку передаёт комментарий", () => {
+    const onReturnForRevision = vi.fn();
+    renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "submitted" }),
+      solution: { cardId: "card-1", sql: "SELECT 1", review: null },
+      onReturnForRevision,
+    });
+    fireEvent.change(screen.getByPlaceholderText("Комментарий"), {
+      target: { value: "Проверь WHERE" },
+    });
+    fireEvent.click(screen.getByText("Вернуть на доработку"));
+    expect(onReturnForRevision).toHaveBeenCalledWith("Проверь WHERE");
+  });
+
+  test("студент видит комментарий при возврате на доработку", () => {
+    renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution: {
+        cardId: "card-1",
+        sql: "SELECT 1",
+        review: null,
+        revisionComment: "Проверь WHERE",
+      },
+    });
+    expect(screen.getByText("Проверь WHERE")).toBeTruthy();
+  });
+
+  test("преподаватель назначает студента из черновика", () => {
+    const onCardChange = vi.fn();
+    renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "draft" }),
+      onCardChange,
+    });
+    fireEvent.click(screen.getByText("Назначить студента"));
+    expect(onCardChange).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "assigned" }),
+    );
   });
 });

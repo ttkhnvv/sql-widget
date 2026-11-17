@@ -4,7 +4,6 @@ export type {
   ReviewResult,
   Role,
   SelectionRange,
-  SelectionRequest,
   Solution,
   SqlExecutor,
   SqlQueryResult,
