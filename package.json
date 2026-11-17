@@ -1,6 +1,6 @@
 {
   "name": "sql-widget",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "SQL task widget for a collaborative learning platform",
   "type": "module",
   "files": [
