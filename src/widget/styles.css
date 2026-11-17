@@ -1,74 +1,305 @@
+/*
+ * Тема задаётся CSS-переменными --sqlw-*. Тёмная тема включается
+ * атрибутом data-theme="dark" на любом предке виджета (или на
+ * самом .sqlw); платформа может переопределить любую переменную.
+ */
 .sqlw {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 1rem;
-  font-family: system-ui, sans-serif;
-  font-size: 14px;
+  --sqlw-surface: #fffefb;
+  --sqlw-sunken: #f4f2ea;
+  --sqlw-text: #1f1e1d;
+  --sqlw-muted: #6b675d;
+  --sqlw-line: #e2dfd2;
+  --sqlw-accent: #b4532e;
+  --sqlw-accent-hover: #9c4525;
+  --sqlw-on-accent: #fffefb;
+  --sqlw-ok: #2f6b45;
+  --sqlw-ok-soft: #e4f0e6;
+  --sqlw-danger: #a8321f;
+  --sqlw-danger-soft: #f9e5df;
+  --sqlw-hint-soft: #f8efd4;
+  --sqlw-mark: rgba(224, 168, 40, 0.2);
+  --sqlw-mark-edge: #d29a1c;
+  --sqlw-select: rgba(180, 83, 46, 0.22);
+  --sqlw-syn-keyword: #a23b5e;
+  --sqlw-syn-string: #2f6b45;
+  --sqlw-syn-number: #1f5fa3;
+  --sqlw-syn-type: #8a5a14;
+  --sqlw-syn-builtin: #6a4aa5;
+  --sqlw-syn-comment: #8d887b;
+  --sqlw-serif:
+    "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
+    "Times New Roman", serif;
+  --sqlw-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sqlw-mono:
+    ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 }
 
+[data-theme="dark"] .sqlw,
+.sqlw[data-theme="dark"] {
+  --sqlw-surface: #2a2926;
+  --sqlw-sunken: #211f1d;
+  --sqlw-text: #f0eee6;
+  --sqlw-muted: #a8a496;
+  --sqlw-line: #3d3b36;
+  --sqlw-accent: #e08a62;
+  --sqlw-accent-hover: #ee9d78;
+  --sqlw-on-accent: #1f1c19;
+  --sqlw-ok: #8fcaa0;
+  --sqlw-ok-soft: #26382c;
+  --sqlw-danger: #f0a090;
+  --sqlw-danger-soft: #402723;
+  --sqlw-hint-soft: #3a3322;
+  --sqlw-mark: rgba(224, 168, 40, 0.16);
+  --sqlw-mark-edge: #d9a93a;
+  --sqlw-select: rgba(224, 138, 98, 0.3);
+  --sqlw-syn-keyword: #e58aa8;
+  --sqlw-syn-string: #9fd3a8;
+  --sqlw-syn-number: #8fbcf0;
+  --sqlw-syn-type: #e0b46a;
+  --sqlw-syn-builtin: #b9a2ee;
+  --sqlw-syn-comment: #8a8678;
+}
+
+.sqlw {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  color: var(--sqlw-text);
+  background: var(--sqlw-surface);
+  border: 1px solid var(--sqlw-line);
+  border-radius: 14px;
+  font-family: var(--sqlw-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sqlw *,
+.sqlw *::before,
+.sqlw *::after {
+  box-sizing: border-box;
+}
+
+.sqlw :focus-visible {
+  outline: 2px solid var(--sqlw-accent);
+  outline-offset: 2px;
+}
+
+/* Шапка: статус и баллы */
 .sqlw-header {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  gap: 8px;
 }
 
 .sqlw-status {
+  padding: 2px 11px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--sqlw-muted);
+  background: var(--sqlw-sunken);
+  border: 1px solid var(--sqlw-line);
+}
+
+.sqlw-status[data-status="assigned"] {
+  color: #2d5a8c;
+  background: #e5eef8;
+  border-color: #c5d8ee;
+}
+
+.sqlw-status[data-status="in_progress"] {
+  color: #8a5a14;
+  background: #f8efd4;
+  border-color: #ebdba8;
+}
+
+.sqlw-status[data-status="submitted"] {
+  color: #a0431f;
+  background: #f9e6dc;
+  border-color: #efc9b6;
+}
+
+.sqlw-status[data-status="reviewed"] {
+  color: var(--sqlw-ok);
+  background: var(--sqlw-ok-soft);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .sqlw-status[data-status="assigned"] {
+  color: #9cc3ee;
+  background: #1f2d3d;
+  border-color: #2f4560;
+}
+
+[data-theme="dark"] .sqlw-status[data-status="in_progress"] {
+  color: #e0b46a;
+  background: #3a3322;
+  border-color: #54482c;
+}
+
+[data-theme="dark"] .sqlw-status[data-status="submitted"] {
+  color: #f0a27e;
+  background: #402a20;
+  border-color: #5c3b2b;
 }
 
 .sqlw-score {
-  color: #555;
+  color: var(--sqlw-muted);
+  font-variant-numeric: tabular-nums;
 }
 
+.sqlw-score strong {
+  font-family: var(--sqlw-serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--sqlw-text);
+}
+
+/* Условие задачи: основной читаемый текст, поэтому с засечками */
 .sqlw-prompt {
+  margin: 0;
+  max-width: 68ch;
+  font-family: var(--sqlw-serif);
+  font-size: 17px;
+  line-height: 1.65;
   white-space: pre-wrap;
-  margin: 0.5rem 0;
 }
 
-.sqlw-editor {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  margin: 0.5rem 0;
-}
-
-.sqlw-editor .cm-editor {
-  font-size: 13px;
-}
-
+/* Подсказки */
 .sqlw-hints {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
+  gap: 8px;
 }
 
 .sqlw-hint-used {
   margin: 0;
-  padding: 0.25rem 0.5rem;
-  background: #fff8e1;
-  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--sqlw-serif);
+  font-size: 15px;
+  background: var(--sqlw-hint-soft);
+  border-left: 3px solid var(--sqlw-mark-edge);
+  border-radius: 4px 8px 8px 4px;
 }
 
-.sqlw-selection {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
+/* Редактор */
+.sqlw-editor {
+  overflow: hidden;
+  border: 1px solid var(--sqlw-line);
+  border-radius: 10px;
+  background: var(--sqlw-sunken);
 }
 
-.sqlw-selection input {
-  flex: 1;
+.sqlw-editor:focus-within {
+  border-color: var(--sqlw-accent);
 }
 
-.sqlw-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
+.sqlw-editor .cm-editor {
+  font-family: var(--sqlw-mono);
+  font-size: 13.5px;
+  color: var(--sqlw-text);
+  background: transparent;
 }
 
+.sqlw-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.sqlw-editor .cm-editor .cm-scroller {
+  font-family: inherit;
+  line-height: 1.7;
+}
+
+.sqlw-editor .cm-editor .cm-content {
+  caret-color: var(--sqlw-text);
+}
+
+.sqlw-editor .cm-editor .cm-cursor {
+  border-left-color: var(--sqlw-text);
+}
+
+.sqlw-editor .cm-editor .cm-gutters {
+  color: var(--sqlw-muted);
+  background: transparent;
+  border-right: 1px solid var(--sqlw-line);
+}
+
+.sqlw-editor .cm-editor .cm-activeLine,
+.sqlw-editor .cm-editor .cm-activeLineGutter {
+  background: transparent;
+}
+
+.sqlw-editor .cm-editor .cm-activeLineGutter {
+  color: var(--sqlw-text);
+}
+
+.sqlw-editor .cm-editor .cm-selectionBackground,
+.sqlw-editor .cm-editor.cm-focused .cm-selectionBackground {
+  background: var(--sqlw-select) !important;
+}
+
+.sqlw-editor .cm-editor .cm-tooltip {
+  color: var(--sqlw-text);
+  background: var(--sqlw-surface);
+  border: 1px solid var(--sqlw-line);
+  border-radius: 8px;
+}
+
+.sqlw-editor .cm-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  color: var(--sqlw-on-accent);
+  background: var(--sqlw-accent);
+}
+
+/* Строки, выделенные второй ролью */
+.sqlw-editor .cm-line.sqlw-highlight {
+  background: var(--sqlw-mark);
+  box-shadow: inset 3px 0 0 var(--sqlw-mark-edge);
+}
+
+/* Кнопки: по умолчанию спокойные, главное действие — акцентное */
 .sqlw button {
-  padding: 0.35rem 0.9rem;
+  padding: 7px 14px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--sqlw-text);
+  background: var(--sqlw-surface);
+  border: 1px solid var(--sqlw-line);
+  border-radius: 8px;
   cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.sqlw button:hover:not(:disabled) {
+  background: var(--sqlw-sunken);
+  border-color: var(--sqlw-muted);
+}
+
+.sqlw button.sqlw-primary {
+  color: var(--sqlw-on-accent);
+  background: var(--sqlw-accent);
+  border-color: var(--sqlw-accent);
+}
+
+.sqlw button.sqlw-primary:hover:not(:disabled) {
+  background: var(--sqlw-accent-hover);
+  border-color: var(--sqlw-accent-hover);
+}
+
+.sqlw .sqlw-hints button {
+  border-style: dashed;
+}
+
+.sqlw button.sqlw-quiet {
+  padding: 2px 8px;
+  color: var(--sqlw-muted);
+  border-color: transparent;
+  background: transparent;
 }
 
 .sqlw button:disabled {
@@ -76,95 +307,170 @@
   opacity: 0.5;
 }
 
+.sqlw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Результаты запроса */
 .sqlw-error {
-  color: #b00020;
+  margin: 0;
+  padding: 10px 12px;
+  font-family: var(--sqlw-mono);
+  font-size: 13px;
+  color: var(--sqlw-danger);
+  background: var(--sqlw-danger-soft);
+  border-radius: 8px;
   white-space: pre-wrap;
 }
 
 .sqlw-muted {
-  color: #777;
+  margin: 0;
+  color: var(--sqlw-muted);
 }
 
 .sqlw-result {
-  border-collapse: collapse;
-  margin-top: 0.5rem;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--sqlw-line);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .sqlw-result th,
 .sqlw-result td {
-  border: 1px solid #ccc;
-  padding: 0.25rem 0.6rem;
+  padding: 6px 12px;
   text-align: left;
+  border-bottom: 1px solid var(--sqlw-line);
 }
 
+.sqlw-result th {
+  font-weight: 600;
+  background: var(--sqlw-sunken);
+}
+
+.sqlw-result tr:last-child td {
+  border-bottom: none;
+}
+
+/* Поля форм */
+.sqlw input[type="text"],
+.sqlw input[type="number"],
+.sqlw textarea {
+  width: 100%;
+  padding: 7px 10px;
+  font: inherit;
+  color: var(--sqlw-text);
+  background: var(--sqlw-surface);
+  border: 1px solid var(--sqlw-line);
+  border-radius: 8px;
+}
+
+.sqlw textarea {
+  resize: vertical;
+}
+
+.sqlw input[type="number"] {
+  max-width: 6rem;
+}
+
+.sqlw ::placeholder {
+  color: var(--sqlw-muted);
+}
+
+/* Проверка преподавателем */
 .sqlw-review {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #ddd;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sqlw-line);
 }
 
-.sqlw-review label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.sqlw-review-result {
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  background: #e8f5e9;
-  border-radius: 4px;
-}
-
-.sqlw-card-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
+.sqlw-review label,
 .sqlw-field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  border-color: #ddd;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.sqlw-review label > span,
+.sqlw-field > span,
+.sqlw-field > legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.sqlw-review-result,
+.sqlw-revision {
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+
+.sqlw-review-result {
+  background: var(--sqlw-ok-soft);
+}
+
+.sqlw-revision {
+  background: var(--sqlw-danger-soft);
+}
+
+.sqlw-review-result strong {
+  font-family: var(--sqlw-serif);
+  font-size: 18px;
+}
+
+.sqlw-review-result p,
+.sqlw-revision p {
+  margin: 4px 0 0;
+  font-family: var(--sqlw-serif);
+  font-size: 15px;
+}
+
+/* Редактор карточки */
+.sqlw-card-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sqlw-card-editor > button {
+  align-self: flex-start;
 }
 
 .sqlw-hint-list {
-  list-style: none;
-  margin: 0;
+  margin: 4px 0 8px;
   padding: 0;
+  list-style: none;
 }
 
 .sqlw-hint-list li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.2rem 0;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--sqlw-line);
 }
 
 .sqlw-hint-add {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .sqlw-hint-add input[type="text"] {
   flex: 1;
 }
 
-.sqlw-hint-add input[type="number"] {
-  width: 4rem;
-}
-
-.sqlw-highlight {
-  background: #fff3bf;
-}
-
-.sqlw-revision {
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  background: #ffe3e3;
-  border-radius: 4px;
+@media (prefers-reduced-motion: reduce) {
+  .sqlw button {
+    transition: none;
+  }
 }

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"C:\\\\data\\\\edu\\\\sql-widget\" && find \"C:\\\\data\\\\edu\\\\sql-widget\" -type f -not -path \"*/node_modules/*\" | head -50)",
+      "Bash(cd \"C:\\\\data\\\\edu\\\\sql-widget\" && git init && git status)",
+      "Bash(cd \"C:\\\\data\\\\edu\\\\sql-widget\" && cat .gitignore && git add .gitignore docs && git commit -m \"$\\(cat <<'EOF'\nAdd initial documentation: spec, work plan and guidelines\nEOF\n\\)\" && git status)",
+      "Bash(cd \"C:\\\\data\\\\edu\\\\sql-widget\" && npm install --no-audit --no-fund 2>&1 | tail -5 && npm run build && ls dist)",
+      "Bash(cd \"C:\\\\data\\\\edu\\\\sql-widget\" && npm install --no-audit --no-fund codemirror @codemirror/lang-sql sql.js && npm install --no-audit --no-fund -D vite @vitejs/plugin-react react react-dom @types/sql.js 2>&1 | tail -3)",
+      "Bash(cd \"C:\\\\data\\\\edu\\\\sql-widget\" && npm run build && npm run demo:build 2>&1 | tail -12)",
+      "Bash(cd \"C:\\\\data\\\\edu\\\\sql-widget\" && \\(npm run demo >/tmp/vite.log 2>&1 &\\) && sleep 6 && curl -s http://localhost:5173/ | head -5 && tail -5 /tmp/vite.log)",
+      "Bash",
+      "*"
+    ]
+  }
+}

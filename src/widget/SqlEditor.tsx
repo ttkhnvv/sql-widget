@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { toSelectionRange } from "../selection.js";
 import type { SelectionRange } from "../types.js";
 import { applyHighlight, highlightExtension } from "./highlight.js";
+import { syntaxExtension } from "./syntax.js";
 
 interface SqlEditorProps {
   value: string;
@@ -32,6 +33,7 @@ export function SqlEditor(props: SqlEditorProps) {
       extensions: [
         basicSetup,
         sql(),
+        syntaxExtension,
         highlightExtension,
         EditorView.editable.of(!readOnly),
         EditorView.updateListener.of((update) => {

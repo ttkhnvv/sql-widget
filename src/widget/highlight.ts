@@ -1,14 +1,23 @@
 import { RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
+import type { Text } from "@codemirror/state";
 import { Decoration, EditorView } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 import type { SelectionRange } from "../types.js";
 
-const mark = Decoration.mark({ class: "sqlw-highlight" });
+const mark = Decoration.line({ class: "sqlw-highlight" });
 
-const setHighlight = StateEffect.define<{
-  from: number;
-  to: number;
-} | null>();
+const setHighlight = StateEffect.define<SelectionRange | null>();
+
+function lineDecorations(doc: Text, range: SelectionRange): DecorationSet {
+  const fromLine = Math.min(Math.max(range.fromLine, 1), doc.lines);
+  const toLine = Math.min(Math.max(range.toLine, 1), doc.lines);
+  const builder = new RangeSetBuilder<Decoration>();
+  for (let n = fromLine; n <= toLine; n += 1) {
+    const from = doc.line(n).from;
+    builder.add(from, from, mark);
+  }
+  return builder.finish();
+}
 
 const highlightField = StateField.define<DecorationSet>({
   create: () => Decoration.none,
@@ -20,9 +29,7 @@ const highlightField = StateField.define<DecorationSet>({
         value = Decoration.none;
         continue;
       }
-      const builder = new RangeSetBuilder<Decoration>();
-      builder.add(effect.value.from, effect.value.to, mark);
-      value = builder.finish();
+      value = lineDecorations(tr.state.doc, effect.value);
     }
     return value;
   },
@@ -42,17 +49,5 @@ export function applyHighlight(
   view: EditorView,
   range: SelectionRange | null,
 ): void {
-  if (!range) {
-    view.dispatch({ effects: setHighlight.of(null) });
-    return;
-  }
-  const doc = view.state.doc;
-  const fromLine = Math.min(Math.max(range.fromLine, 1), doc.lines);
-  const toLine = Math.min(Math.max(range.toLine, 1), doc.lines);
-  view.dispatch({
-    effects: setHighlight.of({
-      from: doc.line(fromLine).from,
-      to: doc.line(toLine).to,
-    }),
-  });
+  view.dispatch({ effects: setHighlight.of(range) });
 }

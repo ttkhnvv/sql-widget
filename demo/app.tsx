@@ -1,17 +1,7 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  Flex,
-  Heading,
-  Select,
-  Text,
-} from "@radix-ui/themes";
 import type { PropsWithChildren } from "react";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { SqlWidget } from "../src/index";
-import type { SelectionRange, SqlExecutor } from "../src/index";
+import type { CardStatus, SelectionRange, SqlExecutor } from "../src/index";
 import {
   createSqlJsExecutor,
   MOCK_CARDS,
@@ -19,26 +9,17 @@ import {
   MockPlatform,
 } from "../src/mock/index";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
+import { ThemeSwitch, useTheme } from "./theme";
 
-type RadixColor = "gray" | "blue" | "yellow" | "orange" | "green";
+const STEPS: { status: CardStatus; label: string }[] = [
+  { status: "draft", label: "Черновик" },
+  { status: "assigned", label: "Назначено" },
+  { status: "in_progress", label: "В работе" },
+  { status: "submitted", label: "На проверке" },
+  { status: "reviewed", label: "Проверено" },
+];
 
-const STATUS_COLORS: Record<string, RadixColor> = {
-  draft: "gray",
-  assigned: "blue",
-  in_progress: "yellow",
-  submitted: "orange",
-  reviewed: "green",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Черновик",
-  assigned: "Назначено",
-  in_progress: "В работе",
-  submitted: "На проверке",
-  reviewed: "Проверено",
-};
-
-const STEP_HINTS: Record<string, string> = {
+const STEP_HINTS: Record<CardStatus, string> = {
   draft: "Преподаватель: заполните карточку и назначьте студента",
   assigned: "Студент: напишите запрос и отправьте на проверку",
   in_progress: "Студент: доработайте запрос с учётом комментария",
@@ -46,28 +27,48 @@ const STEP_HINTS: Record<string, string> = {
     "Преподаватель: выполните запрос студента, верните на " +
     "доработку или оцените. Подсвеченные при отправке строки " +
     "видны обоим",
-  reviewed: "Готово! Можно выбрать другое задание или создать новое",
+  reviewed: "Готово. Можно выбрать другое задание или создать новое",
 };
 
-function Screen({ title, children }: PropsWithChildren<{ title: string }>) {
+function Stepper({ status }: { status: CardStatus }) {
+  const current = STEPS.findIndex((step) => step.status === status);
   return (
-    <Card variant="classic" className="screen">
+    <ol className="stepper" aria-label="Этапы задания">
+      {STEPS.map((step, index) => (
+        <li
+          key={step.status}
+          className="step"
+          data-state={
+            index < current ? "done" : index === current ? "current" : "todo"
+          }
+          aria-current={index === current ? "step" : undefined}
+        >
+          <span className="step-mark" aria-hidden="true" />
+          {step.label}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function Screen({ role, children }: PropsWithChildren<{ role: string }>) {
+  return (
+    <section className="screen" aria-label={`Экран: ${role}`}>
       <div className="screen-bar">
-        <span className="dot red" />
-        <span className="dot yellow" />
-        <span className="dot green" />
-        <Text size="2" color="gray" className="screen-title">
-          {title}
-        </Text>
+        <span className="dot" />
+        <span className="dot" />
+        <span className="dot" />
+        <span className="screen-title">{role}</span>
       </div>
-      <Box className="screen-body">{children}</Box>
-    </Card>
+      <div className="screen-body">{children}</div>
+    </section>
   );
 }
 
 export function App() {
   const platform = useMemo(() => new MockPlatform(MOCK_CARDS), []);
   useSyncExternalStore(platform.subscribe, platform.getVersion);
+  const [theme, setTheme] = useTheme();
   const [cardId, setCardId] = useState(MOCK_CARDS[1].id);
   const [executor, setExecutor] = useState<SqlExecutor | null>(null);
   const [studentSel, setStudentSel] = useState<SelectionRange | null>(null);
@@ -87,11 +88,7 @@ export function App() {
 
   const card = platform.getCard(cardId);
   if (!card || !executor) {
-    return (
-      <Box p="4">
-        <Text>Загрузка sql.js…</Text>
-      </Box>
-    );
+    return <p className="loading">Загрузка sql.js…</p>;
   }
   const solution = platform.getSolution(cardId);
   const isAfterSubmit =
@@ -112,73 +109,72 @@ export function App() {
   }
 
   return (
-    <Box p={{ initial: "3", sm: "5" }} maxWidth="1400px" mx="auto">
-      <Flex direction="column" gap="3">
-        <Flex align="center" gap="3" wrap="wrap">
-          <Heading size="5">SQL Widget — демо полного UX-flow</Heading>
-          <Badge color={STATUS_COLORS[card.status]} size="2">
-            {STATUS_LABELS[card.status]}
-          </Badge>
-        </Flex>
-        <Text size="2" color="gray">
-          {STEP_HINTS[card.status]}
-        </Text>
-        <Flex align="center" gap="3" wrap="wrap">
-          <Select.Root value={cardId} onValueChange={setCardId}>
-            <Select.Trigger className="card-select" />
-            <Select.Content>
-              {platform.getCards().map((item) => (
-                <Select.Item key={item.id} value={item.id}>
-                  {item.prompt.slice(0, 40) || `Черновик ${item.id}`}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Root>
-          <Button onClick={createCard}>Новое задание</Button>
-        </Flex>
-        <Flex
-          direction={{ initial: "column", lg: "row" }}
-          gap="4"
-          align="start"
+    <main className="page">
+      <header className="page-head">
+        <div>
+          <h1>SQL-задания</h1>
+          <p className="lede">
+            Демо без платформы: два экрана с общим состоянием.
+          </p>
+        </div>
+        <ThemeSwitch theme={theme} onChange={setTheme} />
+      </header>
+
+      <div className="progress">
+        <Stepper status={card.status} />
+        <p className="step-hint">{STEP_HINTS[card.status]}</p>
+      </div>
+
+      <div className="toolbar">
+        <select
+          className="card-select"
+          aria-label="Задание"
+          value={cardId}
+          onChange={(e) => setCardId(e.target.value)}
         >
-          <Box className="screen-col">
-            <Screen title="Экран преподавателя — Платформа">
-              <SqlWidget
-                card={card}
-                solution={solution}
-                executor={executor}
-                role="teacher"
-                highlight={isAfterSubmit ? null : studentSel}
-                onCardChange={(next) => platform.updateCard(next)}
-                onSubmit={() => undefined}
-                onUseHint={() => undefined}
-                onReturnForRevision={(comment) =>
-                  platform.returnForRevision(cardId, comment)
-                }
-                onReview={(result) => platform.review(cardId, result)}
-                onSelectionChange={setTeacherSel}
-              />
-            </Screen>
-          </Box>
-          <Box className="screen-col">
-            <Screen title="Экран студента — Платформа">
-              <SqlWidget
-                card={card}
-                solution={solution}
-                executor={executor}
-                role="student"
-                highlight={teacherSel}
-                onSubmit={(sqlText) =>
-                  platform.submit(cardId, sqlText, studentSel)
-                }
-                onUseHint={(hintId) => platform.useHint(cardId, hintId)}
-                onReview={() => undefined}
-                onSelectionChange={setStudentSel}
-              />
-            </Screen>
-          </Box>
-        </Flex>
-      </Flex>
-    </Box>
+          {platform.getCards().map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.prompt.slice(0, 40) || `Черновик ${item.id}`}
+            </option>
+          ))}
+        </select>
+        <button type="button" className="btn" onClick={createCard}>
+          Новое задание
+        </button>
+      </div>
+
+      <div className="screens">
+        <Screen role="Преподаватель">
+          <SqlWidget
+            card={card}
+            solution={solution}
+            executor={executor}
+            role="teacher"
+            highlight={isAfterSubmit ? null : studentSel}
+            onCardChange={(next) => platform.updateCard(next)}
+            onSubmit={() => undefined}
+            onUseHint={() => undefined}
+            onReturnForRevision={(comment) =>
+              platform.returnForRevision(cardId, comment)
+            }
+            onReview={(result) => platform.review(cardId, result)}
+            onSelectionChange={setTeacherSel}
+          />
+        </Screen>
+        <Screen role="Студент">
+          <SqlWidget
+            card={card}
+            solution={solution}
+            executor={executor}
+            role="student"
+            highlight={teacherSel}
+            onSubmit={(sqlText) => platform.submit(cardId, sqlText, studentSel)}
+            onUseHint={(hintId) => platform.useHint(cardId, hintId)}
+            onReview={() => undefined}
+            onSelectionChange={setStudentSel}
+          />
+        </Screen>
+      </div>
+    </main>
   );
 }

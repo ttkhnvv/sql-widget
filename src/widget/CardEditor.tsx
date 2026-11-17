@@ -71,7 +71,11 @@ export function CardEditor({ card, onChange }: CardEditorProps) {
               <span>
                 {hint.text} (−{hint.penalty} б.)
               </span>
-              <button type="button" onClick={() => removeHint(hint.id)}>
+              <button
+                type="button"
+                className="sqlw-quiet"
+                onClick={() => removeHint(hint.id)}
+              >
                 Удалить
               </button>
             </li>
@@ -97,6 +101,7 @@ export function CardEditor({ card, onChange }: CardEditorProps) {
       </fieldset>
       <button
         type="button"
+        className="sqlw-primary"
         disabled={!card.prompt.trim() || !card.assigneeId}
         onClick={() => update({ status: "assigned" })}
       >

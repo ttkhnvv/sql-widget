@@ -91,18 +91,18 @@ export interface SqlWidgetProps {
   /** Текущее решение студента, если есть. */
   solution: Solution | null;
   executor: SqlExecutor;
-  /** Строки, подсвеченные у второй роли (общее пространство). */
-  highlight?: SelectionRange | null;
   /** Преподаватель редактирует карточку (статус draft). */
   onCardChange?(card: TaskCard): void;
   /** Студент отправляет решение на проверку. */
   onSubmit(sql: string): void;
   /** Студент раскрывает подсказку (списывает баллы). */
   onUseHint(hintId: string): void;
-  /** Преподаватель возвращает решение на доработку. */
+  /** Преподаватель возвращает решение на доработку с комментарием. */
   onReturnForRevision?(comment: string): void;
+  /** Строки, выделенные второй ролью (живая подсветка). */
+  highlight?: SelectionRange | null;
+  /** Роль выделила строки в редакторе. */
+  onSelectionChange?(range: SelectionRange | null): void;
   /** Преподаватель завершает проверку. */
   onReview(result: ReviewResult): void;
-  /** Изменение выделения строк в редакторе этой роли. */
-  onSelectionChange?(range: SelectionRange | null): void;
 }

@@ -72,9 +72,11 @@ export function SqlWidget(props: SqlWidgetProps) {
   return (
     <div className="sqlw">
       <header className="sqlw-header">
-        <span className="sqlw-status">{STATUS_LABELS[card.status]}</span>
+        <span className="sqlw-status" data-status={card.status}>
+          {STATUS_LABELS[card.status]}
+        </span>
         <span className="sqlw-score">
-          Баллы: {calculateScore(card)} из {card.maxScore}
+          Баллы <strong>{calculateScore(card)}</strong> из {card.maxScore}
         </span>
       </header>
       <p className="sqlw-prompt">{card.prompt}</p>
@@ -119,6 +121,7 @@ export function SqlWidget(props: SqlWidgetProps) {
         {canSolve && (
           <button
             type="button"
+            className="sqlw-primary"
             disabled={!draftSql.trim()}
             onClick={() => props.onSubmit(draftSql)}
           >
@@ -153,6 +156,7 @@ export function SqlWidget(props: SqlWidgetProps) {
           <div className="sqlw-actions">
             <button
               type="button"
+              className="sqlw-primary"
               onClick={() =>
                 props.onReview({
                   score: reviewScore,
