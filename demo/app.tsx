@@ -6,8 +6,7 @@ import type { Database, QueryExecResult } from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import "./styles.css";
 
-const DEFAULT_QUERY =
-  "SELECT 1 AS one, 'SQL widget demo' AS greeting;";
+const DEFAULT_QUERY = "SELECT 1 AS one, 'SQL widget demo' AS greeting;";
 
 export function App() {
   const editorHost = useRef<HTMLDivElement>(null);
@@ -54,9 +53,7 @@ export function App() {
   return (
     <main className="page">
       <h1>SQL Widget — демо-стенд</h1>
-      <p className="subtitle">
-        Этап 0: дымовой тест CodeMirror 6 + sql.js
-      </p>
+      <p className="subtitle">Этап 0: дымовой тест CodeMirror 6 + sql.js</p>
       <div className="editor" ref={editorHost} />
       <button type="button" onClick={() => void runQuery()}>
         Выполнить запрос
