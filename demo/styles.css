@@ -1,0 +1,43 @@
+.page {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.subtitle {
+  color: #666;
+}
+
+.editor {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.editor .cm-editor {
+  font-size: 14px;
+}
+
+button {
+  padding: 0.4rem 1rem;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.error {
+  color: #b00020;
+  white-space: pre-wrap;
+}
+
+.result {
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.result th,
+.result td {
+  border: 1px solid #ccc;
+  padding: 0.3rem 0.75rem;
+  text-align: left;
+}
