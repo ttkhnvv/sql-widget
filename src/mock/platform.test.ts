@@ -59,4 +59,32 @@ describe("MockPlatform", () => {
       comment: "Ок",
     });
   });
+
+  test("возврат сохраняет строки преподавателя, отправка их очищает", async () => {
+    platform.submit(cardId, "SELECT 1", { fromLine: 1, toLine: 1 });
+    await flush();
+    platform.returnForRevision(cardId, "Плохо", { fromLine: 2, toLine: 3 });
+    await flush();
+    const solution = platform.getSolution(cardId);
+    expect(solution?.revisionHighlight).toEqual({ fromLine: 2, toLine: 3 });
+    expect(solution?.highlight).toEqual({ fromLine: 1, toLine: 1 });
+    platform.submit(cardId, "SELECT 2");
+    await flush();
+    expect(platform.getSolution(cardId)?.revisionHighlight).toBeNull();
+  });
+
+  test("оценка сохраняет строки студента и преподавателя", async () => {
+    platform.submit(cardId, "SELECT 1", { fromLine: 1, toLine: 1 });
+    await flush();
+    const review = {
+      score: 5,
+      comment: "",
+      highlight: { fromLine: 2, toLine: 2 },
+    };
+    platform.review(cardId, review);
+    await flush();
+    const solution = platform.getSolution(cardId);
+    expect(solution?.highlight).toEqual({ fromLine: 1, toLine: 1 });
+    expect(solution?.review).toEqual(review);
+  });
 });

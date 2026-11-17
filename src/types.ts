@@ -50,6 +50,8 @@ export interface SelectionRange {
 export interface ReviewResult {
   score: number;
   comment: string;
+  /** Строки, отмеченные преподавателем как ошибочные. */
+  highlight?: SelectionRange | null;
 }
 
 /**
@@ -64,6 +66,8 @@ export interface Solution {
   /** Строки, выделенные студентом в момент отправки. */
   highlight?: SelectionRange | null;
   revisionComment?: string | null;
+  /** Строки, отмеченные преподавателем при возврате на доработку. */
+  revisionHighlight?: SelectionRange | null;
 }
 
 /**
@@ -93,16 +97,18 @@ export interface SqlWidgetProps {
   executor: SqlExecutor;
   /** Преподаватель редактирует карточку (статус draft). */
   onCardChange?(card: TaskCard): void;
-  /** Студент отправляет решение на проверку. */
-  onSubmit(sql: string): void;
+  /**
+   * Студент отправляет решение на проверку вместе со строками,
+   * выделенными в редакторе в этот момент (null — без выделения).
+   */
+  onSubmit(sql: string, highlight: SelectionRange | null): void;
   /** Студент раскрывает подсказку (списывает баллы). */
   onUseHint(hintId: string): void;
-  /** Преподаватель возвращает решение на доработку с комментарием. */
-  onReturnForRevision?(comment: string): void;
-  /** Строки, выделенные второй ролью (живая подсветка). */
-  highlight?: SelectionRange | null;
-  /** Роль выделила строки в редакторе. */
-  onSelectionChange?(range: SelectionRange | null): void;
+  /**
+   * Преподаватель возвращает решение на доработку: комментарий
+   * и выделенные им строки (студент увидит их только после этого).
+   */
+  onReturnForRevision?(comment: string, highlight: SelectionRange | null): void;
   /** Преподаватель завершает проверку. */
   onReview(result: ReviewResult): void;
 }

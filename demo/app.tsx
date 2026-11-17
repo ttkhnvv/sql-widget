@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { SqlWidget } from "../src/index";
-import type { CardStatus, SelectionRange, SqlExecutor } from "../src/index";
+import type { CardStatus, SqlExecutor } from "../src/index";
 import {
   createSqlJsExecutor,
   MOCK_CARDS,
@@ -21,12 +21,14 @@ const STEPS: { status: CardStatus; label: string }[] = [
 
 const STEP_HINTS: Record<CardStatus, string> = {
   draft: "Преподаватель: заполните карточку и назначьте студента",
-  assigned: "Студент: напишите запрос и отправьте на проверку",
-  in_progress: "Студент: доработайте запрос с учётом комментария",
+  assigned:
+    "Студент: напишите запрос, при необходимости выделите " +
+    "строки, с которыми нужна помощь, и отправьте на проверку",
+  in_progress:
+    "Студент: доработайте запрос с учётом комментария " + "и отмеченных строк",
   submitted:
-    "Преподаватель: выполните запрос студента, верните на " +
-    "доработку или оцените. Подсвеченные при отправке строки " +
-    "видны обоим",
+    "Преподаватель: выполните запрос, при необходимости выделите " +
+    "ошибочные строки и верните на доработку или оцените",
   reviewed: "Готово. Можно выбрать другое задание или создать новое",
 };
 
@@ -71,8 +73,6 @@ export function App() {
   const [theme, setTheme] = useTheme();
   const [cardId, setCardId] = useState(MOCK_CARDS[1].id);
   const [executor, setExecutor] = useState<SqlExecutor | null>(null);
-  const [studentSel, setStudentSel] = useState<SelectionRange | null>(null);
-  const [teacherSel, setTeacherSel] = useState<SelectionRange | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,8 +91,6 @@ export function App() {
     return <p className="loading">Загрузка sql.js…</p>;
   }
   const solution = platform.getSolution(cardId);
-  const isAfterSubmit =
-    card.status === "submitted" || card.status === "reviewed";
 
   function createCard() {
     const id = `card-${Date.now().toString(36)}`;
@@ -150,15 +148,13 @@ export function App() {
             solution={solution}
             executor={executor}
             role="teacher"
-            highlight={isAfterSubmit ? null : studentSel}
             onCardChange={(next) => platform.updateCard(next)}
             onSubmit={() => undefined}
             onUseHint={() => undefined}
-            onReturnForRevision={(comment) =>
-              platform.returnForRevision(cardId, comment)
+            onReturnForRevision={(comment, highlight) =>
+              platform.returnForRevision(cardId, comment, highlight)
             }
             onReview={(result) => platform.review(cardId, result)}
-            onSelectionChange={setTeacherSel}
           />
         </Screen>
         <Screen role="Студент">
@@ -167,11 +163,11 @@ export function App() {
             solution={solution}
             executor={executor}
             role="student"
-            highlight={teacherSel}
-            onSubmit={(sqlText) => platform.submit(cardId, sqlText, studentSel)}
+            onSubmit={(sqlText, highlight) =>
+              platform.submit(cardId, sqlText, highlight)
+            }
             onUseHint={(hintId) => platform.useHint(cardId, hintId)}
             onReview={() => undefined}
-            onSelectionChange={setStudentSel}
           />
         </Screen>
       </div>

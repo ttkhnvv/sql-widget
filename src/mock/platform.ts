@@ -99,6 +99,7 @@ export class MockPlatform {
         review: null,
         highlight,
         revisionComment: null,
+        revisionHighlight: null,
       });
     });
   }
@@ -109,16 +110,16 @@ export class MockPlatform {
       const solution = this.solutions.get(cardId);
       if (!card || !solution) return;
       this.advance(card, "reviewed");
-      this.solutions.set(cardId, {
-        cardId,
-        sql: solution.sql,
-        review: result,
-      });
+      this.solutions.set(cardId, { ...solution, review: result });
     });
   }
 
   /** Возврат решения на доработку: submitted → in_progress. */
-  returnForRevision(cardId: string, comment: string): void {
+  returnForRevision(
+    cardId: string,
+    comment: string,
+    highlight: SelectionRange | null = null,
+  ): void {
     this.apply(() => {
       const card = this.find(cardId);
       const solution = this.solutions.get(cardId);
@@ -128,6 +129,7 @@ export class MockPlatform {
       this.solutions.set(cardId, {
         ...solution,
         revisionComment: comment || null,
+        revisionHighlight: highlight,
       });
     });
   }

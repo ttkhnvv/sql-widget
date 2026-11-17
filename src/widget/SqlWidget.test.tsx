@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
+import { EditorView } from "codemirror";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { SqlExecutor, TaskCard } from "../types.js";
 import { SqlWidget } from "./SqlWidget.js";
@@ -87,7 +94,11 @@ describe("SqlWidget", () => {
       onReview,
     });
     fireEvent.click(screen.getByText("Оценить"));
-    expect(onReview).toHaveBeenCalledWith({ score: 8, comment: "" });
+    expect(onReview).toHaveBeenCalledWith({
+      score: 8,
+      comment: "",
+      highlight: null,
+    });
   });
 
   test("после проверки виден итоговый балл", () => {
@@ -115,7 +126,7 @@ describe("SqlWidget", () => {
       target: { value: "Проверь WHERE" },
     });
     fireEvent.click(screen.getByText("Вернуть на доработку"));
-    expect(onReturnForRevision).toHaveBeenCalledWith("Проверь WHERE");
+    expect(onReturnForRevision).toHaveBeenCalledWith("Проверь WHERE", null);
   });
 
   test("студент видит комментарий при возврате на доработку", () => {
@@ -142,5 +153,133 @@ describe("SqlWidget", () => {
     expect(onCardChange).toHaveBeenCalledWith(
       expect.objectContaining({ status: "assigned" }),
     );
+  });
+});
+
+const SQL = "SELECT a\nFROM t\nWHERE a > 1";
+
+/** Выделяет текст в редакторе виджета, как это делает мышь. */
+function selectInEditor(container: HTMLElement, anchor: number, head: number) {
+  const dom = container.querySelector<HTMLElement>(".cm-editor");
+  const view = dom ? EditorView.findFromDOM(dom) : null;
+  if (!view) throw new Error("editor not found");
+  act(() => view.dispatch({ selection: { anchor, head } }));
+}
+
+describe("выделение строк", () => {
+  const submitted = {
+    role: "teacher" as const,
+    card: makeCard({ status: "submitted" }),
+    solution: { cardId: "card-1", sql: SQL, review: null },
+  };
+
+  test("оценка передаёт выделенные преподавателем строки", () => {
+    const onReview = vi.fn();
+    const { container } = renderWidget({ ...submitted, onReview });
+    selectInEditor(container, 0, 12);
+    fireEvent.click(screen.getByText("Оценить"));
+    expect(onReview).toHaveBeenCalledWith(
+      expect.objectContaining({ highlight: { fromLine: 1, toLine: 2 } }),
+    );
+  });
+
+  test("выделение до начала строки её не задевает", () => {
+    const onReview = vi.fn();
+    const { container } = renderWidget({ ...submitted, onReview });
+    selectInEditor(container, 0, 9);
+    fireEvent.click(screen.getByText("Оценить"));
+    expect(onReview).toHaveBeenCalledWith(
+      expect.objectContaining({ highlight: { fromLine: 1, toLine: 1 } }),
+    );
+  });
+
+  test("возврат на доработку передаёт выделенные строки", () => {
+    const onReturnForRevision = vi.fn();
+    const { container } = renderWidget({ ...submitted, onReturnForRevision });
+    selectInEditor(container, 10, 20);
+    fireEvent.click(screen.getByText("Вернуть на доработку"));
+    expect(onReturnForRevision).toHaveBeenCalledWith("", {
+      fromLine: 2,
+      toLine: 3,
+    });
+  });
+
+  test("курсор без выделения — это отсутствие выделения", () => {
+    const onReview = vi.fn();
+    const { container } = renderWidget({ ...submitted, onReview });
+    selectInEditor(container, 0, 12);
+    selectInEditor(container, 3, 3);
+    fireEvent.click(screen.getByText("Оценить"));
+    expect(onReview).toHaveBeenCalledWith(
+      expect.objectContaining({ highlight: null }),
+    );
+  });
+
+  test("отправка решения передаёт строки студента", () => {
+    const onSubmit = vi.fn();
+    const { container } = renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution: { cardId: "card-1", sql: SQL, review: null },
+      onSubmit,
+    });
+    selectInEditor(container, 0, 5);
+    fireEvent.click(screen.getByText("Отправить на проверку"));
+    expect(onSubmit).toHaveBeenCalledWith(SQL, {
+      fromLine: 1,
+      toLine: 1,
+    });
+  });
+
+  test("до отправки выделение второй роли не видно", () => {
+    const { container } = renderWidget({
+      card: makeCard({ status: "assigned" }),
+      solution: null,
+    });
+    selectInEditor(container, 0, 0);
+    expect(container.querySelector(".sqlw-highlight")).toBeNull();
+    expect(screen.queryByText(/выделил|отметил/)).toBeNull();
+  });
+
+  test("после отправки преподаватель видит строки студента", () => {
+    const { container } = renderWidget({
+      ...submitted,
+      solution: {
+        ...submitted.solution,
+        highlight: { fromLine: 1, toLine: 2 },
+      },
+    });
+    expect(screen.getByText("Студент выделил строки 1–2")).toBeTruthy();
+    expect(container.querySelectorAll(".sqlw-highlight").length).toBe(2);
+  });
+
+  test("после возврата студент видит строки преподавателя", () => {
+    renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution: {
+        cardId: "card-1",
+        sql: SQL,
+        review: null,
+        highlight: { fromLine: 1, toLine: 1 },
+        revisionHighlight: { fromLine: 3, toLine: 3 },
+      },
+    });
+    expect(screen.getByText("Преподаватель отметил строку 3")).toBeTruthy();
+    expect(screen.queryByText(/Студент выделил/)).toBeNull();
+  });
+
+  test("после оценки студент видит строки преподавателя", () => {
+    renderWidget({
+      card: makeCard({ status: "reviewed" }),
+      solution: {
+        cardId: "card-1",
+        sql: SQL,
+        review: {
+          score: 7,
+          comment: "",
+          highlight: { fromLine: 2, toLine: 3 },
+        },
+      },
+    });
+    expect(screen.getByText("Преподаватель отметил строки 2–3")).toBeTruthy();
   });
 });

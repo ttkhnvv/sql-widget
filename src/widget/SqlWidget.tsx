@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { calculateScore } from "../score.js";
-import type { SqlQueryResult, SqlWidgetProps } from "../types.js";
+import type {
+  SelectionRange,
+  Solution,
+  SqlQueryResult,
+  SqlWidgetProps,
+  TaskCard,
+} from "../types.js";
 import { CardEditor } from "./CardEditor.js";
 import { ResultsTable } from "./ResultsTable.js";
 import { SqlEditor } from "./SqlEditor.js";
@@ -14,6 +20,38 @@ const STATUS_LABELS: Record<string, string> = {
   reviewed: "Проверено",
 };
 
+function formatRange(range: SelectionRange): string {
+  return range.fromLine === range.toLine
+    ? `строку ${range.fromLine}`
+    : `строки ${range.fromLine}–${range.toLine}`;
+}
+
+/**
+ * Какие строки и чьи показывать: выделение видно только после
+ * действия автора (отправка решения, возврат или оценка).
+ */
+function fixedHighlight(
+  card: TaskCard,
+  solution: Solution | null,
+): { range: SelectionRange; caption: string } | null {
+  if (!solution) return null;
+  const teacherCaption = (range: SelectionRange) =>
+    `Преподаватель отметил ${formatRange(range)}`;
+  if (card.status === "submitted" && solution.highlight) {
+    return {
+      range: solution.highlight,
+      caption: `Студент выделил ${formatRange(solution.highlight)}`,
+    };
+  }
+  const marked =
+    card.status === "in_progress"
+      ? solution.revisionHighlight
+      : card.status === "reviewed"
+        ? solution.review?.highlight
+        : null;
+  return marked ? { range: marked, caption: teacherCaption(marked) } : null;
+}
+
 /**
  * Виджет SQL-задания: карточка, редактор запроса с общей
  * подсветкой строк, подсказки, проверка и возврат на доработку.
@@ -26,6 +64,12 @@ export function SqlWidget(props: SqlWidgetProps) {
   const [running, setRunning] = useState(false);
   const [reviewScore, setReviewScore] = useState(calculateScore(card));
   const [reviewComment, setReviewComment] = useState("");
+  const [selection, setSelection] = useState<SelectionRange | null>(null);
+
+  // Выделение относится к одному этапу: при смене статуса сбрасываем
+  useEffect(() => {
+    setSelection(null);
+  }, [card.id, card.status]);
 
   useEffect(() => {
     setDraftSql(solution?.sql ?? "");
@@ -68,6 +112,7 @@ export function SqlWidget(props: SqlWidgetProps) {
   }
 
   const editorSql = canSolve ? draftSql : (solution?.sql ?? "");
+  const fixed = fixedHighlight(card, solution);
 
   return (
     <div className="sqlw">
@@ -105,10 +150,11 @@ export function SqlWidget(props: SqlWidgetProps) {
       <SqlEditor
         value={editorSql}
         readOnly={!canSolve}
-        highlight={props.highlight ?? solution?.highlight ?? null}
+        highlight={fixed?.range ?? null}
         onChange={setDraftSql}
-        onSelectRange={(range) => props.onSelectionChange?.(range)}
+        onSelectRange={setSelection}
       />
+      {fixed && <p className="sqlw-muted">{fixed.caption}</p>}
 
       <div className="sqlw-actions">
         <button
@@ -123,7 +169,7 @@ export function SqlWidget(props: SqlWidgetProps) {
             type="button"
             className="sqlw-primary"
             disabled={!draftSql.trim()}
-            onClick={() => props.onSubmit(draftSql)}
+            onClick={() => props.onSubmit(draftSql, selection)}
           >
             Отправить на проверку
           </button>
@@ -161,6 +207,7 @@ export function SqlWidget(props: SqlWidgetProps) {
                 props.onReview({
                   score: reviewScore,
                   comment: reviewComment,
+                  highlight: selection,
                 })
               }
             >
@@ -169,7 +216,9 @@ export function SqlWidget(props: SqlWidgetProps) {
             {props.onReturnForRevision && (
               <button
                 type="button"
-                onClick={() => props.onReturnForRevision?.(reviewComment)}
+                onClick={() =>
+                  props.onReturnForRevision?.(reviewComment, selection)
+                }
               >
                 Вернуть на доработку
               </button>
