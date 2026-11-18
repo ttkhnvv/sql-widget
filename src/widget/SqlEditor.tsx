@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { toSelectionRange } from "../selection.js";
 import type { SelectionRange } from "../types.js";
 import { applyHighlight, highlightExtension } from "./highlight.js";
+import { editorKeymap } from "./keymap.js";
 import { syntaxExtension } from "./syntax.js";
 
 interface SqlEditorProps {
@@ -14,12 +15,17 @@ interface SqlEditorProps {
   highlight?: SelectionRange | null;
   onChange?(value: string): void;
   onSelectRange?(range: SelectionRange | null): void;
+  /** Ctrl-Enter в редакторе. */
+  onRun?(): void;
+  /** Ctrl-Shift-Enter в редакторе. */
+  onSubmit?(): void;
 }
 
 /**
  * Редактор SQL на CodeMirror 6: нумерация строк, выделение
- * строк мышью (onSelectRange, null — выделения нет) и подсветка
- * зафиксированных строк.
+ * строк мышью (onSelectRange, null — выделения нет), подсветка
+ * зафиксированных строк, Tab для отступов и горячие клавиши
+ * запуска и отправки.
  */
 export function SqlEditor(props: SqlEditorProps) {
   const { value, readOnly = false, highlight = null } = props;
@@ -35,6 +41,7 @@ export function SqlEditor(props: SqlEditorProps) {
     const editor = new EditorView({
       doc: callbacks.current.value,
       extensions: [
+        editorKeymap(() => callbacks.current),
         basicSetup,
         sql(),
         syntaxExtension,

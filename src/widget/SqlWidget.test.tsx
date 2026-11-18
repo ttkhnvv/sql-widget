@@ -287,3 +287,115 @@ describe("выделение строк", () => {
     expect(container.querySelectorAll(".sqlw-highlight").length).toBe(1);
   });
 });
+
+/** Нажимает клавишу в редакторе виджета. */
+async function pressKey(
+  container: HTMLElement,
+  init: { key: string; ctrlKey?: boolean; shiftKey?: boolean },
+) {
+  const dom = container.querySelector<HTMLElement>(".cm-editor");
+  const view = dom ? EditorView.findFromDOM(dom) : null;
+  if (!view) throw new Error("editor not found");
+  await act(async () => {
+    fireEvent.keyDown(view.contentDOM, init);
+  });
+  return view;
+}
+
+describe("клавиши редактора", () => {
+  const student = {
+    card: makeCard({ status: "in_progress" }),
+    solution: { cardId: "card-1", sql: SQL, review: null },
+  };
+
+  test("Tab вставляет отступ до следующей позиции", async () => {
+    const { container } = renderWidget(student);
+    const view = await pressKey(container, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe(`  ${SQL}`);
+  });
+
+  test("Tab с выделением сдвигает все затронутые строки", async () => {
+    const { container } = renderWidget(student);
+    selectInEditor(container, 0, 12);
+    const view = await pressKey(container, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe("  SELECT a\n  FROM t\nWHERE a > 1");
+  });
+
+  test("Shift-Tab убирает отступ", async () => {
+    const { container } = renderWidget({
+      ...student,
+      solution: { ...student.solution, sql: "    SELECT a" },
+    });
+    const view = await pressKey(container, { key: "Tab", shiftKey: true });
+    expect(view.state.doc.toString()).toBe("  SELECT a");
+  });
+
+  test("в режиме чтения Tab ничего не вставляет", async () => {
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "submitted" }),
+      solution: student.solution,
+    });
+    const view = await pressKey(container, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe(SQL);
+  });
+
+  test("Ctrl-Enter выполняет запрос и не вставляет строку", async () => {
+    const execute = vi.fn(async () => ({ columns: [], rows: [] }));
+    const { container } = renderWidget({ ...student, executor: { execute } });
+    const view = await pressKey(container, { key: "Enter", ctrlKey: true });
+    expect(execute).toHaveBeenCalledWith(SQL);
+    expect(view.state.doc.toString()).toBe(SQL);
+  });
+
+  test("Ctrl-Enter работает и у преподавателя", async () => {
+    const execute = vi.fn(async () => ({ columns: [], rows: [] }));
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "submitted" }),
+      solution: student.solution,
+      executor: { execute },
+    });
+    await pressKey(container, { key: "Enter", ctrlKey: true });
+    expect(execute).toHaveBeenCalledWith(SQL);
+  });
+
+  test("Ctrl-Shift-Enter отправляет решение студента", async () => {
+    const onSubmit = vi.fn();
+    const execute = vi.fn(async () => ({ columns: [], rows: [] }));
+    const { container } = renderWidget({
+      ...student,
+      onSubmit,
+      executor: { execute },
+    });
+    await pressKey(container, { key: "Enter", ctrlKey: true, shiftKey: true });
+    expect(onSubmit).toHaveBeenCalledWith(SQL);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  test("Ctrl-Shift-Enter не отправляет пустое решение и у преподавателя", async () => {
+    const onSubmit = vi.fn();
+    const empty = renderWidget({
+      card: makeCard({ status: "assigned" }),
+      onSubmit,
+    });
+    await pressKey(empty.container, {
+      key: "Enter",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+    cleanup();
+    const teacher = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "submitted" }),
+      solution: student.solution,
+      onSubmit,
+    });
+    await pressKey(teacher.container, {
+      key: "Enter",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});

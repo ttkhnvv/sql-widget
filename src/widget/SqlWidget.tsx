@@ -143,6 +143,12 @@ export function SqlWidget(props: SqlWidgetProps) {
         highlight={marked}
         onChange={setDraftSql}
         onSelectRange={canReview ? setSelection : undefined}
+        onRun={() => {
+          if (!running && editorSql.trim()) void runQuery(editorSql);
+        }}
+        onSubmit={() => {
+          if (canSolve && draftSql.trim()) props.onSubmit(draftSql);
+        }}
       />
       {marked && !isTeacher && (
         <p className="sqlw-muted">
@@ -153,6 +159,8 @@ export function SqlWidget(props: SqlWidgetProps) {
       <div className="sqlw-actions">
         <button
           type="button"
+          title="Ctrl+Enter"
+          aria-keyshortcuts="Control+Enter"
           disabled={running || !editorSql.trim()}
           onClick={() => void runQuery(editorSql)}
         >
@@ -162,6 +170,8 @@ export function SqlWidget(props: SqlWidgetProps) {
           <button
             type="button"
             className="sqlw-primary"
+            title="Ctrl+Shift+Enter"
+            aria-keyshortcuts="Control+Shift+Enter"
             disabled={!draftSql.trim()}
             onClick={() => props.onSubmit(draftSql)}
           >
