@@ -215,21 +215,6 @@ describe("выделение строк", () => {
     );
   });
 
-  test("отправка решения передаёт строки студента", () => {
-    const onSubmit = vi.fn();
-    const { container } = renderWidget({
-      card: makeCard({ status: "in_progress" }),
-      solution: { cardId: "card-1", sql: SQL, review: null },
-      onSubmit,
-    });
-    selectInEditor(container, 0, 5);
-    fireEvent.click(screen.getByText("Отправить на проверку"));
-    expect(onSubmit).toHaveBeenCalledWith(SQL, {
-      fromLine: 1,
-      toLine: 1,
-    });
-  });
-
   test("до отправки выделение второй роли не видно", () => {
     const { container } = renderWidget({
       card: makeCard({ status: "assigned" }),
@@ -240,18 +225,6 @@ describe("выделение строк", () => {
     expect(screen.queryByText(/выделил|отметил/)).toBeNull();
   });
 
-  test("после отправки преподаватель видит строки студента", () => {
-    const { container } = renderWidget({
-      ...submitted,
-      solution: {
-        ...submitted.solution,
-        highlight: { fromLine: 1, toLine: 2 },
-      },
-    });
-    expect(screen.getByText("Студент выделил строки 1–2")).toBeTruthy();
-    expect(container.querySelectorAll(".sqlw-highlight").length).toBe(2);
-  });
-
   test("после возврата студент видит строки преподавателя", () => {
     renderWidget({
       card: makeCard({ status: "in_progress" }),
@@ -259,12 +232,10 @@ describe("выделение строк", () => {
         cardId: "card-1",
         sql: SQL,
         review: null,
-        highlight: { fromLine: 1, toLine: 1 },
         revisionHighlight: { fromLine: 3, toLine: 3 },
       },
     });
     expect(screen.getByText("Преподаватель отметил строку 3")).toBeTruthy();
-    expect(screen.queryByText(/Студент выделил/)).toBeNull();
   });
 
   test("после оценки студент видит строки преподавателя", () => {
@@ -281,5 +252,38 @@ describe("выделение строк", () => {
       },
     });
     expect(screen.getByText("Преподаватель отметил строки 2–3")).toBeTruthy();
+  });
+
+  test("выделение студента не передаётся при отправке", () => {
+    const onSubmit = vi.fn();
+    const { container } = renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution: { cardId: "card-1", sql: SQL, review: null },
+      onSubmit,
+    });
+    selectInEditor(container, 0, 12);
+    fireEvent.click(screen.getByText("Отправить на проверку"));
+    expect(onSubmit).toHaveBeenCalledWith(SQL);
+  });
+
+  test("преподаватель не видит выделения студента", () => {
+    const { container } = renderWidget({ ...submitted });
+    expect(container.querySelector(".sqlw-highlight")).toBeNull();
+    expect(screen.queryByText(/выделил|отметил/)).toBeNull();
+  });
+
+  test("у преподавателя нет подписи о его отметках", () => {
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "in_progress" }),
+      solution: {
+        cardId: "card-1",
+        sql: SQL,
+        review: null,
+        revisionHighlight: { fromLine: 3, toLine: 3 },
+      },
+    });
+    expect(screen.queryByText(/отметил/)).toBeNull();
+    expect(container.querySelectorAll(".sqlw-highlight").length).toBe(1);
   });
 });

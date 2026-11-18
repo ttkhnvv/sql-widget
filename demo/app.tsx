@@ -21,9 +21,7 @@ const STEPS: { status: CardStatus; label: string }[] = [
 
 const STEP_HINTS: Record<CardStatus, string> = {
   draft: "Преподаватель: заполните карточку и назначьте студента",
-  assigned:
-    "Студент: напишите запрос, при необходимости выделите " +
-    "строки, с которыми нужна помощь, и отправьте на проверку",
+  assigned: "Студент: напишите запрос и отправьте на проверку",
   in_progress:
     "Студент: доработайте запрос с учётом комментария " + "и отмеченных строк",
   submitted:
@@ -163,9 +161,7 @@ export function App() {
             solution={solution}
             executor={executor}
             role="student"
-            onSubmit={(sqlText, highlight) =>
-              platform.submit(cardId, sqlText, highlight)
-            }
+            onSubmit={(sqlText) => platform.submit(cardId, sqlText)}
             onUseHint={(hintId) => platform.useHint(cardId, hintId)}
             onReview={() => undefined}
           />

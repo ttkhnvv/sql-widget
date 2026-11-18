@@ -55,16 +55,13 @@ export interface ReviewResult {
 }
 
 /**
- * Решение студента: SQL-текст, результат проверки,
- * зафиксированное при отправке выделение строк и комментарий
- * преподавателя при возврате на доработку.
+ * Решение студента: SQL-текст, результат проверки и возврат на
+ * доработку (комментарий и строки, отмеченные преподавателем).
  */
 export interface Solution {
   cardId: string;
   sql: string;
   review: ReviewResult | null;
-  /** Строки, выделенные студентом в момент отправки. */
-  highlight?: SelectionRange | null;
   revisionComment?: string | null;
   /** Строки, отмеченные преподавателем при возврате на доработку. */
   revisionHighlight?: SelectionRange | null;
@@ -97,11 +94,8 @@ export interface SqlWidgetProps {
   executor: SqlExecutor;
   /** Преподаватель редактирует карточку (статус draft). */
   onCardChange?(card: TaskCard): void;
-  /**
-   * Студент отправляет решение на проверку вместе со строками,
-   * выделенными в редакторе в этот момент (null — без выделения).
-   */
-  onSubmit(sql: string, highlight: SelectionRange | null): void;
+  /** Студент отправляет решение на проверку. */
+  onSubmit(sql: string): void;
   /** Студент раскрывает подсказку (списывает баллы). */
   onUseHint(hintId: string): void;
   /**

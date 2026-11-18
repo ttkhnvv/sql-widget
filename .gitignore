@@ -2,3 +2,4 @@ docs/priv/
 node_modules/
 dist/
 demo/dist/
+.project_dump.txt

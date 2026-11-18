@@ -27,29 +27,19 @@ function formatRange(range: SelectionRange): string {
 }
 
 /**
- * Какие строки и чьи показывать: выделение видно только после
- * действия автора (отправка решения, возврат или оценка).
+ * Строки, отмеченные преподавателем при возврате или оценке.
+ * Они видны только после этого действия. Студент строки для
+ * преподавателя не выделяет: его выделение никуда не передаётся.
  */
-function fixedHighlight(
+function markedLines(
   card: TaskCard,
   solution: Solution | null,
-): { range: SelectionRange; caption: string } | null {
-  if (!solution) return null;
-  const teacherCaption = (range: SelectionRange) =>
-    `Преподаватель отметил ${formatRange(range)}`;
-  if (card.status === "submitted" && solution.highlight) {
-    return {
-      range: solution.highlight,
-      caption: `Студент выделил ${formatRange(solution.highlight)}`,
-    };
+): SelectionRange | null {
+  if (card.status === "in_progress") {
+    return solution?.revisionHighlight ?? null;
   }
-  const marked =
-    card.status === "in_progress"
-      ? solution.revisionHighlight
-      : card.status === "reviewed"
-        ? solution.review?.highlight
-        : null;
-  return marked ? { range: marked, caption: teacherCaption(marked) } : null;
+  if (card.status === "reviewed") return solution?.review?.highlight ?? null;
+  return null;
 }
 
 /**
@@ -112,7 +102,7 @@ export function SqlWidget(props: SqlWidgetProps) {
   }
 
   const editorSql = canSolve ? draftSql : (solution?.sql ?? "");
-  const fixed = fixedHighlight(card, solution);
+  const marked = markedLines(card, solution);
 
   return (
     <div className="sqlw">
@@ -150,11 +140,15 @@ export function SqlWidget(props: SqlWidgetProps) {
       <SqlEditor
         value={editorSql}
         readOnly={!canSolve}
-        highlight={fixed?.range ?? null}
+        highlight={marked}
         onChange={setDraftSql}
-        onSelectRange={setSelection}
+        onSelectRange={canReview ? setSelection : undefined}
       />
-      {fixed && <p className="sqlw-muted">{fixed.caption}</p>}
+      {marked && !isTeacher && (
+        <p className="sqlw-muted">
+          Преподаватель отметил {formatRange(marked)}
+        </p>
+      )}
 
       <div className="sqlw-actions">
         <button
@@ -169,7 +163,7 @@ export function SqlWidget(props: SqlWidgetProps) {
             type="button"
             className="sqlw-primary"
             disabled={!draftSql.trim()}
-            onClick={() => props.onSubmit(draftSql, selection)}
+            onClick={() => props.onSubmit(draftSql)}
           >
             Отправить на проверку
           </button>

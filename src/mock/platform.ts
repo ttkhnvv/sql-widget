@@ -83,11 +83,7 @@ export class MockPlatform {
     });
   }
 
-  submit(
-    cardId: string,
-    sql: string,
-    highlight: SelectionRange | null = null,
-  ): void {
+  submit(cardId: string, sql: string): void {
     this.apply(() => {
       const card = this.find(cardId);
       if (!card) return;
@@ -97,7 +93,6 @@ export class MockPlatform {
         cardId,
         sql,
         review: null,
-        highlight,
         revisionComment: null,
         revisionHighlight: null,
       });

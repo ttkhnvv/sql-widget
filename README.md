@@ -41,7 +41,7 @@ const executor: SqlExecutor = {
   role="student"
   solution={solution}
   executor={executor}
-  onSubmit={(sql, lines) => api.submit(card.id, sql, lines)}
+  onSubmit={(sql) => api.submit(card.id, sql)}
   onUseHint={(hintId) => api.useHint(card.id, hintId)}
   onReturnForRevision={(comment, lines) =>
     api.returnForRevision(card.id, comment, lines)
