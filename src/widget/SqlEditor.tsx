@@ -18,7 +18,9 @@ interface SqlEditorProps {
   /** Ctrl-Enter в редакторе. */
   onRun?(): void;
   /** Ctrl-Shift-Enter в редакторе. */
-  onSubmit?(): void;
+  onConfirm?(): void;
+  /** Ctrl-Alt-Enter в редакторе. */
+  onReturn?(): void;
 }
 
 /**

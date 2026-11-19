@@ -399,3 +399,108 @@ describe("клавиши редактора", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
+
+describe("клавиши преподавателя", () => {
+  const review = {
+    role: "teacher" as const,
+    card: makeCard({ status: "submitted" }),
+    solution: { cardId: "card-1", sql: SQL, review: null },
+  };
+  const confirmKeys = { key: "Enter", ctrlKey: true, shiftKey: true };
+  const returnKeys = { key: "Enter", ctrlKey: true, altKey: true };
+
+  test("Ctrl-Shift-Enter в редакторе оценивает один раз", async () => {
+    const onReview = vi.fn();
+    const { container } = renderWidget({ ...review, onReview });
+    selectInEditor(container, 0, 12);
+    await pressKey(container, confirmKeys);
+    expect(onReview).toHaveBeenCalledTimes(1);
+    expect(onReview).toHaveBeenCalledWith({
+      score: 10,
+      comment: "",
+      highlight: { fromLine: 1, toLine: 2 },
+    });
+  });
+
+  test("Ctrl-Alt-Enter в редакторе возвращает на доработку", async () => {
+    const onReturnForRevision = vi.fn();
+    const { container } = renderWidget({ ...review, onReturnForRevision });
+    await pressKey(container, returnKeys);
+    expect(onReturnForRevision).toHaveBeenCalledTimes(1);
+    expect(onReturnForRevision).toHaveBeenCalledWith("", null);
+  });
+
+  test("клавиши работают из поля комментария", () => {
+    const onReview = vi.fn();
+    const onReturnForRevision = vi.fn();
+    renderWidget({ ...review, onReview, onReturnForRevision });
+    const comment = screen.getByPlaceholderText("Комментарий");
+    fireEvent.change(comment, { target: { value: "Проверь WHERE" } });
+    fireEvent.keyDown(comment, returnKeys);
+    expect(onReturnForRevision).toHaveBeenCalledWith("Проверь WHERE", null);
+    fireEvent.keyDown(comment, confirmKeys);
+    expect(onReview).toHaveBeenCalledWith(
+      expect.objectContaining({ comment: "Проверь WHERE" }),
+    );
+  });
+
+  test("без onReturnForRevision Ctrl-Alt-Enter ничего не делает", async () => {
+    const onReview = vi.fn();
+    const { container } = renderWidget({ ...review, onReview });
+    await pressKey(container, returnKeys);
+    expect(onReview).not.toHaveBeenCalled();
+  });
+
+  test("у студента Ctrl-Alt-Enter ничего не делает", async () => {
+    const onSubmit = vi.fn();
+    const onReview = vi.fn();
+    const { container } = renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution: review.solution,
+      onSubmit,
+      onReview,
+    });
+    await pressKey(container, returnKeys);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onReview).not.toHaveBeenCalled();
+  });
+
+  test("после оценки клавиши ничего не оценивают повторно", async () => {
+    const onReview = vi.fn();
+    const { container } = renderWidget({
+      ...review,
+      card: makeCard({ status: "reviewed" }),
+      onReview,
+    });
+    await pressKey(container, confirmKeys);
+    expect(onReview).not.toHaveBeenCalled();
+  });
+
+  test("в черновике Ctrl-Shift-Enter назначает студента", () => {
+    const onCardChange = vi.fn();
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "draft" }),
+      onCardChange,
+    });
+    const root = container.querySelector(".sqlw");
+    if (!root) throw new Error("widget not found");
+    fireEvent.keyDown(root, confirmKeys);
+    expect(onCardChange).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "assigned" }),
+    );
+  });
+
+  test("черновик без студента не назначается", () => {
+    const onCardChange = vi.fn();
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "draft", assigneeId: null }),
+      onCardChange,
+    });
+    const root = container.querySelector(".sqlw");
+    if (!root) throw new Error("widget not found");
+    fireEvent.keyDown(root, confirmKeys);
+    expect(onCardChange).not.toHaveBeenCalled();
+  });
+});

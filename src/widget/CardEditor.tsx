@@ -102,6 +102,8 @@ export function CardEditor({ card, onChange }: CardEditorProps) {
       <button
         type="button"
         className="sqlw-primary"
+        title="Ctrl+Shift+Enter"
+        aria-keyshortcuts="Control+Shift+Enter"
         disabled={!card.prompt.trim() || !card.assigneeId}
         onClick={() => update({ status: "assigned" })}
       >

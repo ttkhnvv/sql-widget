@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { calculateScore } from "../score.js";
 import type {
   SelectionRange,
@@ -10,6 +11,7 @@ import type {
 import { CardEditor } from "./CardEditor.js";
 import { ResultsTable } from "./ResultsTable.js";
 import { SqlEditor } from "./SqlEditor.js";
+import { shortcutOf } from "./keymap.js";
 import "./styles.css";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -90,9 +92,48 @@ export function SqlWidget(props: SqlWidgetProps) {
     }
   }
 
+  function submitSolution() {
+    if (canSolve && draftSql.trim()) props.onSubmit(draftSql);
+  }
+
+  function finishReview() {
+    if (!canReview) return;
+    props.onReview({
+      score: reviewScore,
+      comment: reviewComment,
+      highlight: selection,
+    });
+  }
+
+  function returnForRevision() {
+    if (canReview) props.onReturnForRevision?.(reviewComment, selection);
+  }
+
+  const canAssign = Boolean(card.prompt.trim() && card.assigneeId);
+
+  /** Главное действие роли: отправить, оценить или назначить. */
+  function confirm() {
+    if (canSolve) submitSolution();
+    else if (canReview) finishReview();
+    else if (isTeacher && card.status === "draft" && canAssign) {
+      props.onCardChange?.({ ...card, status: "assigned" });
+    }
+  }
+
+  /** Клавиши работают из любого поля виджета, не только из редактора. */
+  function handleShortcut(event: KeyboardEvent<HTMLDivElement>) {
+    // Редактор уже обработал свои клавиши и отменил действие по умолчанию
+    if (event.defaultPrevented) return;
+    const action = shortcutOf(event);
+    if (action === "confirm") confirm();
+    else if (action === "return") returnForRevision();
+    else return;
+    event.preventDefault();
+  }
+
   if (isTeacher && card.status === "draft") {
     return (
-      <div className="sqlw">
+      <div className="sqlw" onKeyDown={handleShortcut}>
         <CardEditor
           card={card}
           onChange={(next) => props.onCardChange?.(next)}
@@ -105,7 +146,7 @@ export function SqlWidget(props: SqlWidgetProps) {
   const marked = markedLines(card, solution);
 
   return (
-    <div className="sqlw">
+    <div className="sqlw" onKeyDown={handleShortcut}>
       <header className="sqlw-header">
         <span className="sqlw-status" data-status={card.status}>
           {STATUS_LABELS[card.status]}
@@ -146,9 +187,8 @@ export function SqlWidget(props: SqlWidgetProps) {
         onRun={() => {
           if (!running && editorSql.trim()) void runQuery(editorSql);
         }}
-        onSubmit={() => {
-          if (canSolve && draftSql.trim()) props.onSubmit(draftSql);
-        }}
+        onConfirm={confirm}
+        onReturn={returnForRevision}
       />
       {marked && !isTeacher && (
         <p className="sqlw-muted">
@@ -173,7 +213,7 @@ export function SqlWidget(props: SqlWidgetProps) {
             title="Ctrl+Shift+Enter"
             aria-keyshortcuts="Control+Shift+Enter"
             disabled={!draftSql.trim()}
-            onClick={() => props.onSubmit(draftSql)}
+            onClick={submitSolution}
           >
             Отправить на проверку
           </button>
@@ -207,22 +247,18 @@ export function SqlWidget(props: SqlWidgetProps) {
             <button
               type="button"
               className="sqlw-primary"
-              onClick={() =>
-                props.onReview({
-                  score: reviewScore,
-                  comment: reviewComment,
-                  highlight: selection,
-                })
-              }
+              title="Ctrl+Shift+Enter"
+              aria-keyshortcuts="Control+Shift+Enter"
+              onClick={finishReview}
             >
               Оценить
             </button>
             {props.onReturnForRevision && (
               <button
                 type="button"
-                onClick={() =>
-                  props.onReturnForRevision?.(reviewComment, selection)
-                }
+                title="Ctrl+Alt+Enter"
+                aria-keyshortcuts="Control+Alt+Enter"
+                onClick={returnForRevision}
               >
                 Вернуть на доработку
               </button>
