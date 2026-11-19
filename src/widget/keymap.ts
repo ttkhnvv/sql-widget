@@ -17,18 +17,17 @@ export interface EditorActions {
 export type Shortcut = "run" | "confirm" | "return";
 
 /**
- * Какое действие виджета вызывает нажатие: Ctrl/Cmd-Enter — выполнить
- * запрос, Ctrl/Cmd-Shift-Enter — главное действие роли (отправить,
- * оценить, назначить), Ctrl/Cmd-Alt-Enter — вернуть на доработку.
+ * Какое действие виджета вызывает нажатие: Ctrl-Enter — выполнить
+ * запрос, Ctrl-Shift-Enter — главное действие роли (отправить,
+ * оценить, назначить), Ctrl-Alt-Enter — вернуть на доработку.
  */
 export function shortcutOf(event: {
   key: string;
   ctrlKey: boolean;
-  metaKey: boolean;
   shiftKey: boolean;
   altKey: boolean;
 }): Shortcut | null {
-  if (event.key !== "Enter" || !(event.ctrlKey || event.metaKey)) {
+  if (event.key !== "Enter" || !event.ctrlKey) {
     return null;
   }
   if (event.altKey) return "return";
@@ -111,9 +110,8 @@ export function indentLess(view: EditorView): boolean {
 /**
  * Клавиши редактора: Tab и Shift-Tab (отступы), Ctrl-Enter
  * (выполнить запрос), Ctrl-Shift-Enter (главное действие роли),
- * Ctrl-Alt-Enter (вернуть на доработку). Cmd вместо Ctrl работает
- * и на macOS. Приоритет выше стандартных клавиш, где Ctrl-Enter
- * вставляет пустую строку.
+ * Ctrl-Alt-Enter (вернуть на доработку). Приоритет выше стандартных
+ * клавиш, где Ctrl-Enter вставляет пустую строку.
  */
 export function editorKeymap(actions: () => EditorActions): Extension {
   const run = () => {
@@ -131,11 +129,8 @@ export function editorKeymap(actions: () => EditorActions): Extension {
   return Prec.highest(
     keymap.of([
       { key: "Tab", run: indentMore, shift: indentLess },
-      { key: "Mod-Enter", run },
       { key: "Ctrl-Enter", run },
-      { key: "Mod-Shift-Enter", run: confirm },
       { key: "Ctrl-Shift-Enter", run: confirm },
-      { key: "Mod-Alt-Enter", run: giveBack },
       { key: "Ctrl-Alt-Enter", run: giveBack },
     ]),
   );

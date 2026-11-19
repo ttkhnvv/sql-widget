@@ -15,6 +15,8 @@ interface SqlEditorProps {
   highlight?: SelectionRange | null;
   onChange?(value: string): void;
   onSelectRange?(range: SelectionRange | null): void;
+  /** Подсказка при наведении на редактор. */
+  title?: string;
   /** Ctrl-Enter в редакторе. */
   onRun?(): void;
   /** Ctrl-Shift-Enter в редакторе. */
@@ -104,5 +106,5 @@ export function SqlEditor(props: SqlEditorProps) {
     applyHighlight(editor, range);
   }, [fromLine, toLine, readOnly]);
 
-  return <div className="sqlw-editor" ref={host} />;
+  return <div className="sqlw-editor" ref={host} title={props.title} />;
 }

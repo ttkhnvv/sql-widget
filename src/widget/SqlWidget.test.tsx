@@ -291,7 +291,13 @@ describe("выделение строк", () => {
 /** Нажимает клавишу в редакторе виджета. */
 async function pressKey(
   container: HTMLElement,
-  init: { key: string; ctrlKey?: boolean; shiftKey?: boolean },
+  init: {
+    key: string;
+    ctrlKey?: boolean;
+    shiftKey?: boolean;
+    altKey?: boolean;
+    metaKey?: boolean;
+  },
 ) {
   const dom = container.querySelector<HTMLElement>(".cm-editor");
   const view = dom ? EditorView.findFromDOM(dom) : null;
@@ -502,5 +508,69 @@ describe("клавиши преподавателя", () => {
     if (!root) throw new Error("widget not found");
     fireEvent.keyDown(root, confirmKeys);
     expect(onCardChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("подсказки при наведении", () => {
+  const solution = { cardId: "card-1", sql: SQL, review: null };
+
+  function titleOf(label: string) {
+    return screen.getByText(label).getAttribute("title");
+  }
+
+  test("у студента подсказки на кнопках и редакторе", () => {
+    const { container } = renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution,
+    });
+    expect(titleOf("Выполнить")).toBe("Ctrl+Enter");
+    expect(titleOf("Отправить на проверку")).toBe("Ctrl+Shift+Enter");
+    expect(
+      container.querySelector(".sqlw-editor")?.getAttribute("title"),
+    ).toMatch(/Esc, затем Tab/);
+  });
+
+  test("у преподавателя подсказки проверки, у редактора нет", () => {
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "submitted" }),
+      solution,
+      onReturnForRevision: vi.fn(),
+    });
+    expect(titleOf("Выполнить")).toBe("Ctrl+Enter");
+    expect(titleOf("Оценить")).toBe("Ctrl+Shift+Enter");
+    expect(titleOf("Вернуть на доработку")).toBe("Ctrl+Alt+Enter");
+    expect(container.querySelector(".sqlw-editor")?.hasAttribute("title")).toBe(
+      false,
+    );
+  });
+
+  test("в черновике подсказка на кнопке назначения", () => {
+    renderWidget({ role: "teacher", card: makeCard({ status: "draft" }) });
+    expect(titleOf("Назначить студента")).toBe("Ctrl+Shift+Enter");
+  });
+
+  test("подсказки показываются только при наведении, без Meta", () => {
+    const { container } = renderWidget({
+      role: "teacher",
+      card: makeCard({ status: "submitted" }),
+      solution,
+    });
+    expect(container.querySelector("kbd")).toBeNull();
+    for (const el of container.querySelectorAll("[aria-keyshortcuts]")) {
+      expect(el.getAttribute("aria-keyshortcuts")).toMatch(/^Control\+/);
+    }
+    expect(container.innerHTML).not.toMatch(/Meta|Cmd|⌘/);
+  });
+
+  test("Cmd-Enter клавишей запуска не является", async () => {
+    const execute = vi.fn(async () => ({ columns: [], rows: [] }));
+    const { container } = renderWidget({
+      card: makeCard({ status: "in_progress" }),
+      solution,
+      executor: { execute },
+    });
+    await pressKey(container, { key: "Enter", metaKey: true });
+    expect(execute).not.toHaveBeenCalled();
   });
 });

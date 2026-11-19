@@ -28,6 +28,10 @@ function formatRange(range: SelectionRange): string {
     : `строки ${range.fromLine}–${range.toLine}`;
 }
 
+const EDITOR_HINT =
+  "Tab — отступ, Shift+Tab — убрать отступ. " +
+  "Чтобы выйти из редактора с клавиатуры: Esc, затем Tab";
+
 /**
  * Строки, отмеченные преподавателем при возврате или оценке.
  * Они видны только после этого действия. Студент строки для
@@ -181,6 +185,7 @@ export function SqlWidget(props: SqlWidgetProps) {
       <SqlEditor
         value={editorSql}
         readOnly={!canSolve}
+        title={canSolve ? EDITOR_HINT : undefined}
         highlight={marked}
         onChange={setDraftSql}
         onSelectRange={canReview ? setSelection : undefined}
